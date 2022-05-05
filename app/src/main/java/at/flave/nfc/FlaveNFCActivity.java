@@ -53,12 +53,6 @@ public abstract class FlaveNFCActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
 
         techListsArray = new String[][]{new String[]{
                 NfcA.class.getName(),
@@ -72,11 +66,19 @@ public abstract class FlaveNFCActivity extends Activity {
 
         }};
 
+        setupNfcReaderCallback();
+        setupNfcAdapter();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+
+
         IntentFilter filter = new IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED);
         this.registerReceiver(mReceiver, filter);
 
-        setupNfcReaderCallback();
-        setupNfcAdapter();
 
     }
 
@@ -164,21 +166,13 @@ public abstract class FlaveNFCActivity extends Activity {
                             NfcAdapter.FLAG_READER_NFC_F |
                             NfcAdapter.FLAG_READER_NFC_V |
                             NfcAdapter.FLAG_READER_NFC_BARCODE |
-                            NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
+                            NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
                     null);
 
             pendingIntent = PendingIntent.getActivity(
-                    this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+                    this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_IMMUTABLE);
 
         }
-        IntentFilter ndef = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
-        try {
-            ndef.addDataType("*/*");
-        } catch (IntentFilter.MalformedMimeTypeException e) {
-            Log.wtf(getTag(), e);
-            e.printStackTrace();
-        }
-        intentFiltersArray = new IntentFilter[]{ndef};
     }
 
 
@@ -228,17 +222,6 @@ public abstract class FlaveNFCActivity extends Activity {
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
 
-        if (mNfcAdapter != null && mNfcAdapter.isEnabled()) {
-            mNfcAdapter.enableForegroundDispatch(this, pendingIntent, null, null);
-            if (mNfcAdapter.isNdefPushEnabled() && (Build.MODEL.startsWith("FX100") || Build.MODEL.startsWith("FX200") || Build.MODEL.startsWith("FX300"))) {
-                // Android Beam is disabled, show the settings UI
-                // to enable Android Beam
-                Toast.makeText(this, "Please disable Android Beam first!",
-                        Toast.LENGTH_LONG).show();
-                startActivity(new Intent(ACTION_NFCSHARING_SETTINGS));
-            }
-        }
-
     }
 
     @Override
@@ -280,7 +263,7 @@ public abstract class FlaveNFCActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mNfcAdapter != null && mNfcAdapter.isEnabled()) mNfcAdapter.disableForegroundDispatch(this);
+
     }
 
 
